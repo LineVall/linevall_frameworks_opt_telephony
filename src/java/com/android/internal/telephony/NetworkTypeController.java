@@ -507,14 +507,26 @@ public class NetworkTypeController extends StateMachine {
         int value = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE;
         if ((getDataNetworkType() == TelephonyManager.NETWORK_TYPE_LTE_CA
                 || mServiceState.isUsingCarrierAggregation())
-                && IntStream.of(mServiceState.getCellBandwidths()).sum()
-                > mLtePlusThresholdBandwidth) {
+                || isLteCaInPhysicalChannelConfig()
+                // always report LTE+ if available
+                /*&& IntStream.of(mServiceState.getCellBandwidths()).sum()
+                > mLtePlusThresholdBandwidth*/) {
             value = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA;
         }
         if (isLteEnhancedAvailable()) {
             value = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO;
         }
         return value;
+    }
+
+    private boolean isLteCaInPhysicalChannelConfig() {
+        List<PhysicalChannelConfig> physicalChannelConfigList =
+                mPhone.getServiceStateTracker().getPhysicalChannelConfigList();
+        if (ArrayUtils.isEmpty(physicalChannelConfigList)) {
+            return false;
+        }
+        return physicalChannelConfigList.stream()
+                .anyMatch(item -> item.getNetworkType() == TelephonyManager.NETWORK_TYPE_LTE_CA);
     }
 
     private boolean isLteEnhancedAvailable() {
